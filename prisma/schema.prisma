@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Action {
+  action_id   Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Define the permissions relationship
+  permissions Permission[]
+}
+
+model Page {
+  page_id     Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Define the permissions relationship
+  permissions Permission[]
+}
+
+model Role {
+  role_id     Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Define the users relationship
+  users       User[]
+  permissions Permission[]
+}
+
+// Define the Permission table
+model Permission {
+  permission_id Int      @id @default(autoincrement())
+  name          String?
+  role_id       Int?
+  action_id     Int?
+  page_id       Int?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Define the relationships
+  action Action? @relation(fields: [action_id], references: [action_id])
+  page   Page?   @relation(fields: [page_id], references: [page_id])
+  role   Role?    @relation(fields: [role_id], references: [role_id])
+}
+
+model User {
+  user_id      Int           @id @default(autoincrement())
+  password     String
+  role_id      Int // Foreign key to Role table
+  email        String        @unique
+  full_name    String
+  created_at   DateTime      @default(now())
+  lastLogin    DateTime?
+  updated_at   DateTime      @updatedAt
+  isActive     Boolean       @default(true)
+  // Define the role relationship
+  role         Role          @relation(fields: [role_id], references: [role_id])
+  // Define the appointments relationship
+  appointments Appointment[]
+}
+
+model Appointment {
+  appointment_id String   @id @default(uuid())
+  user_id        Int?
+  staff_id       Int?
+  service_id     Int
+  date_time      DateTime
+  status         Status   @default(pending)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  // Define the relationships
+  user    User?   @relation(fields: [user_id], references: [user_id])
+  staff   Staff?  @relation(fields: [staff_id], references: [staff_id])
+  service Service @relation(fields: [service_id], references: [service_id])
+}
+
+enum Status {
+  pending
+  completed
+  canceled
+}
+
+model Service {
+  service_id   Int           @id @default(autoincrement())
+  name         String
+  description  String?
+  price        Float
+  duration     Int
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  // Define the appointments relationship
+  appointments Appointment[]
+  staff        Staff[]
+  salon        Salon         @relation(fields: [salon_id], references: [salon_id])
+  salon_id     Int
+}
+
+model Staff {
+  staff_id     Int           @id @default(autoincrement())
+  name         String
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  // Define the appointments relationship
+  service      Service?      @relation(fields: [service_id], references: [service_id])
+  service_id   Int?
+  salon_id     Int?
+  Salon        Salon?        @relation(fields: [salon_id], references: [salon_id])
+  appointments Appointment[]
+}
+
+model Salon {
+  salon_id    Int       @id @default(autoincrement())
+  rating      Float     @default(5)
+  price       Float     @default(2.5)
+  name        String
+  description String
+  phone       String?
+  city        String?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  // Define the appointments relationship
+  services    Service[]
+  staff       Staff[]
+}
